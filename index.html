@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f172a">
+<title>TOEIC Vocab</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{
+  --bg:#0f172a; --card:#1e293b; --card2:#334155; --accent:#38bdf8; --accent2:#22c55e;
+  --danger:#f43f5e; --gold:#f59e0b; --text:#e2e8f0; --muted:#94a3b8;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Sarabun",sans-serif;
+  background:var(--bg); color:var(--text);
+  padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom);
+  overflow-x:hidden;
+}
+#app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+.screen{flex:1;padding:18px 16px 90px;display:none;animation:fade .25s ease;}
+.screen.active{display:block;}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+h1{font-size:22px;margin:4px 0 2px;}
+.sub{color:var(--muted);font-size:13px;margin-bottom:16px;}
+.row{display:flex;gap:12px;}
+.card{background:var(--card);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 6px 20px rgba(0,0,0,.25);}
+.stat{flex:1;text-align:center;background:var(--card);border-radius:16px;padding:14px 8px;}
+.stat .num{font-size:26px;font-weight:800;}
+.stat .lbl{font-size:11px;color:var(--muted);margin-top:2px;}
+.fire{font-size:44px;line-height:1;}
+.btn{
+  display:block;width:100%;border:none;border-radius:14px;padding:16px;font-size:16px;
+  font-weight:700;color:#fff;background:var(--accent);cursor:pointer;margin-top:10px;
+  font-family:inherit;transition:transform .06s;
+}
+.btn:active{transform:scale(.97);}
+.btn.green{background:var(--accent2);}
+.btn.ghost{background:var(--card2);}
+.btn.gold{background:var(--gold);}
+.btn.danger{background:var(--danger);}
+.btn:disabled{opacity:.45;}
+.pill{display:inline-block;background:var(--card2);color:var(--accent);font-size:12px;font-weight:700;
+  padding:4px 12px;border-radius:999px;margin-bottom:8px;}
+
+/* Flashcard */
+.flash-wrap{perspective:1400px;margin-top:8px;}
+.flash{
+  position:relative;width:100%;min-height:360px;border-radius:22px;
+  transform-style:preserve-3d;transition:transform .5s;cursor:pointer;
+}
+.flash.flip{transform:rotateY(180deg);}
+.face{
+  position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  border-radius:22px;padding:24px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;
+}
+.front{background:linear-gradient(160deg,#1e293b,#0b1220);}
+.back{background:linear-gradient(160deg,#14532d,#052e16);transform:rotateY(180deg);
+  justify-content:flex-start;overflow-y:auto;}
+.word{font-size:40px;font-weight:800;letter-spacing:.5px;}
+.pos{color:var(--gold);font-weight:700;font-size:15px;margin-top:10px;}
+.tap-hint{color:var(--muted);font-size:12px;margin-top:24px;}
+.speak{margin-top:16px;background:var(--card2);border:none;color:var(--accent);
+  width:60px;height:60px;border-radius:50%;font-size:26px;cursor:pointer;}
+.th-mean{font-size:26px;font-weight:800;margin:6px 0 4px;color:#bbf7d0;}
+.ex-box{background:rgba(0,0,0,.25);border-radius:12px;padding:12px;margin-top:14px;text-align:left;width:100%;}
+.ex-en{font-size:15px;line-height:1.5;}
+.ex-th{font-size:14px;color:var(--muted);margin-top:6px;line-height:1.5;}
+.small-speak{background:none;border:none;color:var(--accent);font-size:18px;cursor:pointer;padding:0 4px;}
+.progress-bar{height:10px;background:var(--card2);border-radius:999px;overflow:hidden;margin:6px 0 2px;}
+.progress-bar > div{height:100%;background:var(--accent2);transition:width .3s;}
+.counter{color:var(--muted);font-size:13px;text-align:center;margin-bottom:8px;}
+
+/* Quiz */
+.opt{background:var(--card);border:2px solid transparent;border-radius:14px;padding:16px;
+  margin-bottom:12px;font-size:16px;cursor:pointer;font-family:inherit;color:var(--text);width:100%;text-align:left;}
+.opt.correct{border-color:var(--accent2);background:#14532d;}
+.opt.wrong{border-color:var(--danger);background:#4c0519;}
+.opt:disabled{cursor:default;}
+
+/* nav */
+.nav{position:fixed;bottom:0;left:0;right:0;max-width:520px;margin:0 auto;
+  background:rgba(15,23,42,.95);backdrop-filter:blur(10px);display:flex;
+  border-top:1px solid var(--card2);padding-bottom:env(safe-area-inset-bottom);}
+.nav button{flex:1;background:none;border:none;color:var(--muted);padding:10px 0 12px;
+  font-size:11px;font-family:inherit;cursor:pointer;}
+.nav button .ic{font-size:22px;display:block;margin-bottom:2px;}
+.nav button.on{color:var(--accent);}
+
+.weak-item{display:flex;justify-content:space-between;align-items:center;
+  background:var(--card);border-radius:12px;padding:12px 14px;margin-bottom:8px;}
+.weak-item .en{font-weight:700;}
+.weak-item .mn{color:var(--muted);font-size:13px;}
+.badge{background:var(--danger);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;}
+.center{text-align:center;}
+.big-emoji{font-size:64px;margin:20px 0 8px;}
+.mastered-tag{color:var(--gold);font-size:12px;font-weight:700;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME -->
+  <section id="home" class="screen active">
+    <h1>📚 TOEIC Vocab</h1>
+    <div class="sub">ท่องศัพท์แบบแฟลชการ์ด + ทบทวนความจำระยะยาว</div>
+
+    <div class="card center" style="background:linear-gradient(160deg,#7c2d12,#431407);">
+      <div class="fire" id="fireIcon">🔥</div>
+      <div style="font-size:30px;font-weight:800" id="streakCount">0</div>
+      <div style="color:#fed7aa;font-size:13px" id="streakMsg">วันติดต่อกัน</div>
+    </div>
+
+    <div class="row" style="margin-bottom:14px">
+      <div class="stat"><div class="num" id="hLearned" style="color:var(--accent2)">0</div><div class="lbl">เรียนแล้ว</div></div>
+      <div class="stat"><div class="num" id="hDue" style="color:var(--gold)">0</div><div class="lbl">ต้องทบทวนวันนี้</div></div>
+      <div class="stat"><div class="num" id="hMastered" style="color:var(--accent)">0</div><div class="lbl">แม่นแล้ว</div></div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:4px">ความคืบหน้ารวม (จาก <span id="totalWords">0</span> คำ)</div>
+      <div class="progress-bar"><div id="homeProg" style="width:0%"></div></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px" id="progText"></div>
+    </div>
+
+    <button class="btn green" onclick="startLearn()">▶️ เริ่มเรียน / ทบทวนวันนี้</button>
+    <button class="btn gold" onclick="startQuiz()">🎮 เล่นเกมวัดผล</button>
+    <button class="btn ghost" onclick="show('stats')">📊 ดูสถิติ & คำที่จำไม่ได้</button>
+  </section>
+
+  <!-- LEARN / FLASHCARD -->
+  <section id="learn" class="screen">
+    <div class="counter" id="learnCounter"></div>
+    <div class="progress-bar"><div id="learnProg" style="width:0%"></div></div>
+    <div class="flash-wrap">
+      <div class="flash" id="flashCard" onclick="flipCard()">
+        <div class="face front">
+          <span class="pill" id="fPos">—</span>
+          <div class="word" id="fWord">—</div>
+          <button class="speak" onclick="event.stopPropagation();speakCurrent()">🔊</button>
+          <div class="tap-hint">แตะการ์ดเพื่อดูคำแปล</div>
+        </div>
+        <div class="face back">
+          <div class="word" id="bWord" style="font-size:28px">—</div>
+          <span class="pill" id="bPos" style="margin-top:8px">—</span>
+          <div class="th-mean" id="bMean">—</div>
+          <button class="speak" style="width:48px;height:48px;font-size:20px" onclick="event.stopPropagation();speakCurrent()">🔊</button>
+          <div class="ex-box">
+            <div class="ex-en" id="bExEn">
+              <button class="small-speak" onclick="event.stopPropagation();speakEx()">🔊</button>
+              <span id="bExEnText"></span>
+            </div>
+            <div class="ex-th" id="bExTh"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="gradeBtns" style="display:none;margin-top:16px">
+      <div class="row">
+        <button class="btn danger" style="margin-top:0" onclick="grade(false)">😵 จำไม่ได้</button>
+        <button class="btn green" style="margin-top:0" onclick="grade(true)">😎 จำได้</button>
+      </div>
+    </div>
+    <div id="learnDone" style="display:none" class="center">
+      <div class="big-emoji">🎉</div>
+      <h1>จบรอบแล้ว!</h1>
+      <div class="sub" id="doneMsg"></div>
+      <button class="btn green" onclick="show('home')">กลับหน้าหลัก</button>
+    </div>
+  </section>
+
+  <!-- QUIZ -->
+  <section id="quiz" class="screen">
+    <div class="counter" id="quizCounter"></div>
+    <div class="progress-bar"><div id="quizProg" style="width:0%"></div></div>
+    <div id="quizBody">
+      <div class="card center">
+        <div style="font-size:13px;color:var(--muted)">คำนี้แปลว่าอะไร?</div>
+        <div class="word" id="qWord" style="font-size:34px;margin:10px 0">—</div>
+        <button class="speak" onclick="speakQuiz()">🔊</button>
+      </div>
+      <div id="qOpts"></div>
+    </div>
+    <div id="quizDone" style="display:none" class="center">
+      <div class="big-emoji" id="quizEmoji">🏆</div>
+      <h1 id="quizScore">—</h1>
+      <div class="sub" id="quizMsg"></div>
+      <button class="btn gold" onclick="startQuiz()">เล่นอีกรอบ</button>
+      <button class="btn ghost" onclick="show('home')">กลับหน้าหลัก</button>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section id="stats" class="screen">
+    <h1>📊 สถิติ</h1>
+    <div class="sub">ภาพรวมการเรียนและคำที่ต้องเน้น</div>
+    <div class="row" style="margin-bottom:14px">
+      <div class="stat"><div class="num" id="sSeen" style="color:var(--accent2)">0</div><div class="lbl">เจอแล้ว</div></div>
+      <div class="stat"><div class="num" id="sMastered" style="color:var(--accent)">0</div><div class="lbl">แม่นแล้ว</div></div>
+      <div class="stat"><div class="num" id="sWeak" style="color:var(--danger)">0</div><div class="lbl">ยังไม่แม่น</div></div>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:8px">🔴 คำที่จำไม่ค่อยได้</div>
+      <div id="weakList"><div class="sub">ยังไม่มีข้อมูล เริ่มเรียนก่อนนะ</div></div>
+    </div>
+    <button class="btn ghost" onclick="resetAll()">♻️ รีเซ็ตความคืบหน้าทั้งหมด</button>
+  </section>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <button id="navHome" class="on" onclick="show('home')"><span class="ic">🏠</span>หน้าหลัก</button>
+    <button id="navLearn" onclick="startLearn()"><span class="ic">🃏</span>เรียน</button>
+    <button id="navQuiz" onclick="startQuiz()"><span class="ic">🎮</span>เกม</button>
+    <button id="navStats" onclick="show('stats')"><span class="ic">📊</span>สถิติ</button>
+  </nav>
+</div>
+
+<script>
+/* ============ WORD DATABASE (ชุดเริ่มต้น TOEIC) ============ */
+/* เพิ่มคำจากหนังสือได้ที่นี่ รูปแบบ: {en,pos,th,ex,exTh} */
+const WORDS = [
+{en:"abandon",pos:"v.",th:"ละทิ้ง, ทอดทิ้ง",ex:"They had to abandon the project due to lack of funds.",exTh:"พวกเขาต้องละทิ้งโครงการเพราะขาดเงินทุน"},
+{en:"accommodate",pos:"v.",th:"รองรับ, จัดหาที่พักให้",ex:"The hotel can accommodate up to 500 guests.",exTh:"โรงแรมรองรับแขกได้ถึง 500 คน"},
+{en:"acquire",pos:"v.",th:"ได้มา, เข้าซื้อกิจการ",ex:"The company acquired a smaller competitor last year.",exTh:"บริษัทเข้าซื้อคู่แข่งรายเล็กเมื่อปีที่แล้ว"},
+{en:"agenda",pos:"n.",th:"ระเบียบวาระการประชุม",ex:"The first item on the agenda is the budget.",exTh:"วาระแรกของการประชุมคือเรื่องงบประมาณ"},
+{en:"allowance",pos:"n.",th:"เบี้ยเลี้ยง, เงินช่วยเหลือ",ex:"Employees receive a travel allowance each month.",exTh:"พนักงานได้รับเบี้ยเลี้ยงการเดินทางทุกเดือน"},
+{en:"appreciate",pos:"v.",th:"ซาบซึ้ง, เห็นคุณค่า",ex:"We appreciate your hard work on this project.",exTh:"เราซาบซึ้งในความทุ่มเทของคุณกับโครงการนี้"},
+{en:"approve",pos:"v.",th:"อนุมัติ, เห็นชอบ",ex:"The manager approved the new marketing plan.",exTh:"ผู้จัดการอนุมัติแผนการตลาดใหม่"},
+{en:"assemble",pos:"v.",th:"ประกอบ, รวมตัวกัน",ex:"Workers assemble the parts on the production line.",exTh:"คนงานประกอบชิ้นส่วนบนสายการผลิต"},
+{en:"attend",pos:"v.",th:"เข้าร่วม (ประชุม/งาน)",ex:"All staff must attend the safety training.",exTh:"พนักงานทุกคนต้องเข้าร่วมการอบรมความปลอดภัย"},
+{en:"authorize",pos:"v.",th:"มอบอำนาจ, อนุญาต",ex:"Only managers are authorized to sign contracts.",exTh:"เฉพาะผู้จัดการเท่านั้นที่มีอำนาจเซ็นสัญญา"},
+{en:"available",pos:"adj.",th:"ว่าง, พร้อมใช้งาน, หาซื้อได้",ex:"The report will be available tomorrow morning.",exTh:"รายงานจะพร้อมให้ดูพรุ่งนี้เช้า"},
+{en:"beneficial",pos:"adj.",th:"มีประโยชน์",ex:"Regular exercise is beneficial to your health.",exTh:"การออกกำลังกายสม่ำเสมอมีประโยชน์ต่อสุขภาพ"},
+{en:"bill",pos:"n.",th:"ใบเรียกเก็บเงิน, บิล",ex:"Please pay the electricity bill by Friday.",exTh:"กรุณาชำระค่าไฟฟ้าภายในวันศุกร์"},
+{en:"brochure",pos:"n.",th:"แผ่นพับโฆษณา",ex:"The travel agency handed out colorful brochures.",exTh:"บริษัททัวร์แจกแผ่นพับสีสันสดใส"},
+{en:"budget",pos:"n.",th:"งบประมาณ",ex:"We need to stay within the marketing budget.",exTh:"เราต้องใช้จ่ายไม่เกินงบการตลาด"},
+{en:"cancel",pos:"v.",th:"ยกเลิก",ex:"They had to cancel the flight because of the storm.",exTh:"พวกเขาต้องยกเลิกเที่ยวบินเพราะพายุ"},
+{en:"candidate",pos:"n.",th:"ผู้สมัคร (งาน/ตำแหน่ง)",ex:"We interviewed five candidates for the position.",exTh:"เราสัมภาษณ์ผู้สมัครห้าคนสำหรับตำแหน่งนี้"},
+{en:"colleague",pos:"n.",th:"เพื่อนร่วมงาน",ex:"She discussed the idea with her colleagues.",exTh:"เธอปรึกษาไอเดียนี้กับเพื่อนร่วมงาน"},
+{en:"commute",pos:"v.",th:"เดินทางไป-กลับที่ทำงาน",ex:"He commutes to the office by train every day.",exTh:"เขาเดินทางไปทำงานด้วยรถไฟทุกวัน"},
+{en:"compensate",pos:"v.",th:"ชดเชย, จ่ายค่าตอบแทน",ex:"The company will compensate you for the extra hours.",exTh:"บริษัทจะจ่ายค่าตอบแทนให้คุณสำหรับชั่วโมงที่ทำเพิ่ม"},
+{en:"confirm",pos:"v.",th:"ยืนยัน",ex:"Please confirm your reservation by email.",exTh:"กรุณายืนยันการจองผ่านอีเมล"},
+{en:"consequence",pos:"n.",th:"ผลที่ตามมา",ex:"Missing the deadline had serious consequences.",exTh:"การพลาดกำหนดส่งมีผลกระทบร้ายแรงตามมา"},
+{en:"contract",pos:"n.",th:"สัญญา",ex:"Both parties signed the contract yesterday.",exTh:"ทั้งสองฝ่ายเซ็นสัญญาเมื่อวานนี้"},
+{en:"convenient",pos:"adj.",th:"สะดวก",ex:"The new office is in a convenient location near the station.",exTh:"ออฟฟิศใหม่อยู่ในทำเลสะดวกใกล้สถานี"},
+{en:"deadline",pos:"n.",th:"กำหนดส่ง, เส้นตาย",ex:"We must finish the report before the deadline.",exTh:"เราต้องทำรายงานให้เสร็จก่อนกำหนดส่ง"},
+{en:"delay",pos:"n./v.",th:"ความล่าช้า, เลื่อน",ex:"The flight was delayed by two hours.",exTh:"เที่ยวบินล่าช้าไปสองชั่วโมง"},
+{en:"deliver",pos:"v.",th:"ส่งมอบ, จัดส่ง",ex:"The package will be delivered tomorrow.",exTh:"พัสดุจะถูกจัดส่งพรุ่งนี้"},
+{en:"department",pos:"n.",th:"แผนก, ฝ่าย",ex:"She works in the human resources department.",exTh:"เธอทำงานอยู่แผนกทรัพยากรบุคคล"},
+{en:"deposit",pos:"n.",th:"เงินมัดจำ, เงินฝาก",ex:"You must pay a deposit to reserve the room.",exTh:"คุณต้องจ่ายเงินมัดจำเพื่อจองห้อง"},
+{en:"discount",pos:"n.",th:"ส่วนลด",ex:"Members get a 10 percent discount on all items.",exTh:"สมาชิกได้ส่วนลด 10 เปอร์เซ็นต์สำหรับทุกสินค้า"},
+{en:"distribute",pos:"v.",th:"แจกจ่าย, กระจายสินค้า",ex:"They distribute their products across Asia.",exTh:"พวกเขากระจายสินค้าไปทั่วเอเชีย"},
+{en:"efficient",pos:"adj.",th:"มีประสิทธิภาพ",ex:"The new system is faster and more efficient.",exTh:"ระบบใหม่เร็วและมีประสิทธิภาพมากกว่า"},
+{en:"employee",pos:"n.",th:"พนักงาน, ลูกจ้าง",ex:"The company hired ten new employees.",exTh:"บริษัทจ้างพนักงานใหม่สิบคน"},
+{en:"estimate",pos:"n./v.",th:"ประมาณการ",ex:"Can you give me an estimate of the cost?",exTh:"คุณช่วยประมาณค่าใช้จ่ายให้หน่อยได้ไหม"},
+{en:"expense",pos:"n.",th:"ค่าใช้จ่าย",ex:"We need to reduce our monthly expenses.",exTh:"เราต้องลดค่าใช้จ่ายรายเดือน"},
+{en:"facility",pos:"n.",th:"สิ่งอำนวยความสะดวก, สถานที่",ex:"The hotel has excellent fitness facilities.",exTh:"โรงแรมมีสิ่งอำนวยความสะดวกด้านฟิตเนสที่ยอดเยี่ยม"},
+{en:"feedback",pos:"n.",th:"ผลตอบรับ, ข้อเสนอแนะ",ex:"The manager gave helpful feedback on my report.",exTh:"ผู้จัดการให้ข้อเสนอแนะที่เป็นประโยชน์ต่อรายงานของฉัน"},
+{en:"fragile",pos:"adj.",th:"แตกหักง่าย, เปราะบาง",ex:"Please handle this box carefully; it's fragile.",exTh:"กรุณาระวังกล่องนี้ มันแตกง่าย"},
+{en:"generate",pos:"v.",th:"สร้าง, ก่อให้เกิด",ex:"The campaign generated a lot of interest.",exTh:"แคมเปญนี้สร้างความสนใจได้มาก"},
+{en:"guarantee",pos:"n./v.",th:"รับประกัน",ex:"The product comes with a one-year guarantee.",exTh:"สินค้ามีการรับประกันหนึ่งปี"},
+{en:"headquarters",pos:"n.",th:"สำนักงานใหญ่",ex:"The company's headquarters are in Tokyo.",exTh:"สำนักงานใหญ่ของบริษัทอยู่ที่โตเกียว"},
+{en:"implement",pos:"v.",th:"นำไปปฏิบัติ, ดำเนินการ",ex:"We will implement the new policy next month.",exTh:"เราจะนำนโยบายใหม่ไปใช้เดือนหน้า"},
+{en:"inventory",pos:"n.",th:"สินค้าคงคลัง",ex:"The store checks its inventory every week.",exTh:"ร้านตรวจสอบสินค้าคงคลังทุกสัปดาห์"},
+{en:"invoice",pos:"n.",th:"ใบแจ้งหนี้",ex:"Please send the invoice to our accounting department.",exTh:"กรุณาส่งใบแจ้งหนี้ไปยังแผนกบัญชีของเรา"},
+{en:"itinerary",pos:"n.",th:"กำหนดการเดินทาง",ex:"The travel agent emailed us the full itinerary.",exTh:"เอเจนต์ทัวร์ส่งกำหนดการเดินทางฉบับเต็มมาให้เรา"},
+{en:"launch",pos:"v./n.",th:"เปิดตัว, เริ่มดำเนินการ",ex:"The company will launch a new phone in June.",exTh:"บริษัทจะเปิดตัวโทรศัพท์รุ่นใหม่ในเดือนมิถุนายน"},
+{en:"maintain",pos:"v.",th:"บำรุงรักษา, รักษาไว้",ex:"It is important to maintain the equipment regularly.",exTh:"การบำรุงรักษาอุปกรณ์อย่างสม่ำเสมอเป็นสิ่งสำคัญ"},
+{en:"manufacture",pos:"v.",th:"ผลิต",ex:"The factory manufactures car parts.",exTh:"โรงงานผลิตชิ้นส่วนรถยนต์"},
+{en:"merchandise",pos:"n.",th:"สินค้า",ex:"All merchandise is on sale this weekend.",exTh:"สินค้าทั้งหมดลดราคาสุดสัปดาห์นี้"},
+{en:"negotiate",pos:"v.",th:"เจรจาต่อรอง",ex:"They negotiated a better price with the supplier.",exTh:"พวกเขาเจรจาต่อรองราคาที่ดีกว่ากับซัพพลายเออร์"},
+{en:"occupation",pos:"n.",th:"อาชีพ",ex:"Please write your name and occupation on the form.",exTh:"กรุณาเขียนชื่อและอาชีพของคุณลงในแบบฟอร์ม"},
+{en:"opportunity",pos:"n.",th:"โอกาส",ex:"This job is a great opportunity for you.",exTh:"งานนี้เป็นโอกาสที่ดีสำหรับคุณ"},
+{en:"overtime",pos:"n.",th:"การทำงานล่วงเวลา",ex:"She worked overtime to finish the project.",exTh:"เธอทำงานล่วงเวลาเพื่อทำโครงการให้เสร็จ"},
+{en:"participate",pos:"v.",th:"เข้าร่วม, มีส่วนร่วม",ex:"Everyone is encouraged to participate in the meeting.",exTh:"ทุกคนได้รับการสนับสนุนให้มีส่วนร่วมในการประชุม"},
+{en:"postpone",pos:"v.",th:"เลื่อนออกไป",ex:"They decided to postpone the event until next week.",exTh:"พวกเขาตัดสินใจเลื่อนงานออกไปจนถึงสัปดาห์หน้า"},
+{en:"purchase",pos:"v./n.",th:"ซื้อ, การซื้อ",ex:"You can purchase tickets online.",exTh:"คุณสามารถซื้อตั๋วออนไลน์ได้"},
+{en:"receipt",pos:"n.",th:"ใบเสร็จรับเงิน",ex:"Keep your receipt in case you want a refund.",exTh:"เก็บใบเสร็จไว้เผื่อคุณต้องการเงินคืน"},
+{en:"recommend",pos:"v.",th:"แนะนำ",ex:"I recommend this restaurant to all my friends.",exTh:"ฉันแนะนำร้านอาหารนี้ให้เพื่อนทุกคน"},
+{en:"refund",pos:"n./v.",th:"เงินคืน, คืนเงิน",ex:"The store offered a full refund for the faulty product.",exTh:"ร้านให้เงินคืนเต็มจำนวนสำหรับสินค้าที่ชำรุด"},
+{en:"reimburse",pos:"v.",th:"จ่ายเงินคืน (ที่สำรองจ่าย)",ex:"The company will reimburse your travel costs.",exTh:"บริษัทจะจ่ายค่าเดินทางคืนให้คุณ"},
+{en:"reliable",pos:"adj.",th:"เชื่อถือได้, ไว้ใจได้",ex:"He is a reliable employee who is never late.",exTh:"เขาเป็นพนักงานที่เชื่อถือได้และไม่เคยมาสาย"},
+{en:"renovate",pos:"v.",th:"ปรับปรุง, ตกแต่งใหม่",ex:"They plan to renovate the old office building.",exTh:"พวกเขาวางแผนปรับปรุงอาคารสำนักงานเก่า"},
+{en:"reservation",pos:"n.",th:"การจอง",ex:"I made a reservation for two at the restaurant.",exTh:"ฉันจองโต๊ะสำหรับสองคนที่ร้านอาหาร"},
+{en:"resume",pos:"n.",th:"ประวัติย่อ (เรซูเม่)",ex:"Please attach your resume to the application.",exTh:"กรุณาแนบเรซูเม่ของคุณไปกับใบสมัคร"},
+{en:"revenue",pos:"n.",th:"รายได้ (ของธุรกิจ)",ex:"The company's revenue increased last quarter.",exTh:"รายได้ของบริษัทเพิ่มขึ้นในไตรมาสที่แล้ว"},
+{en:"schedule",pos:"n./v.",th:"ตารางเวลา, กำหนดการ",ex:"The meeting is scheduled for 3 p.m.",exTh:"การประชุมกำหนดไว้เวลาบ่ายสามโมง"},
+{en:"shipment",pos:"n.",th:"การขนส่งสินค้า, สินค้าที่ส่ง",ex:"The shipment will arrive at the port on Monday.",exTh:"สินค้าจะมาถึงท่าเรือในวันจันทร์"},
+{en:"submit",pos:"v.",th:"ส่ง, ยื่น (เอกสาร)",ex:"You must submit the form before Friday.",exTh:"คุณต้องส่งแบบฟอร์มก่อนวันศุกร์"},
+{en:"supervisor",pos:"n.",th:"หัวหน้างาน, ผู้ควบคุมงาน",ex:"Report any problems to your supervisor.",exTh:"แจ้งปัญหาใดๆ ให้หัวหน้างานของคุณทราบ"},
+{en:"warehouse",pos:"n.",th:"คลังสินค้า, โกดัง",ex:"The goods are stored in a large warehouse.",exTh:"สินค้าถูกเก็บไว้ในคลังสินค้าขนาดใหญ่"}
+];
+WORDS.forEach((w,i)=>w.id="w"+i);
+
+/* ============ STATE ============ */
+const KEY="toeic_vocab_v1";
+const INTERVALS={1:3,2:7,3:30,4:90}; // box -> days ; box>=5 = mastered
+const NEW_PER_DAY=15, QUIZ_LEN=10;
+let S=load();
+
+function todayNum(){const d=new Date();return Math.floor(new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime()/86400000);}
+function load(){
+  let s;try{s=JSON.parse(localStorage.getItem(KEY));}catch(e){}
+  if(!s||!s.w){s={w:{},streak:{count:0,last:-1},v:1};}
+  return s;
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function wp(id){ if(!S.w[id]) S.w[id]={box:0,next:todayNum(),c:0,x:0,seen:false}; return S.w[id];}
+
+/* streak / fire */
+function touchStreak(){
+  const t=todayNum();
+  if(S.streak.last===t) return;
+  if(S.streak.last===t-1) S.streak.count++;
+  else S.streak.count=1;
+  S.streak.last=t; save();
+}
+function fireAlive(){ return S.streak.last>=todayNum()-1 && S.streak.count>0; }
+
+/* ============ NAV ============ */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('on'));
+  ({home:'navHome',learn:'navLearn',quiz:'navQuiz',stats:'navStats'})[id] &&
+    document.getElementById(({home:'navHome',learn:'navLearn',quiz:'navQuiz',stats:'navStats'})[id]).classList.add('on');
+  window.scrollTo(0,0);
+  if(id==='home') renderHome();
+  if(id==='stats') renderStats();
+}
+
+/* ============ HOME ============ */
+function renderHome(){
+  const t=todayNum();
+  let learned=0,mastered=0,due=0,seen=0;
+  WORDS.forEach(w=>{const p=S.w[w.id]; if(p&&p.seen){seen++; if(p.box>=1)learned++; if(p.box>=5)mastered++; if(p.next<=t)due++;}});
+  document.getElementById('hLearned').textContent=learned;
+  document.getElementById('hMastered').textContent=mastered;
+  document.getElementById('hDue').textContent=due;
+  document.getElementById('totalWords').textContent=WORDS.length;
+  const pct=Math.round(seen/WORDS.length*100);
+  document.getElementById('homeProg').style.width=pct+'%';
+  document.getElementById('progText').textContent=`เจอแล้ว ${seen}/${WORDS.length} คำ (${pct}%)`;
+  // fire
+  const alive=fireAlive();
+  document.getElementById('fireIcon').textContent=alive?'🔥':'💨';
+  document.getElementById('streakCount').textContent=alive?S.streak.count:0;
+  document.getElementById('streakMsg').textContent=alive
+    ? 'วันติดต่อกัน — อย่าให้ไฟดับ!'
+    : (S.streak.count>0?'ไฟดับแล้ว! เข้ามาเรียนวันนี้เพื่อจุดไฟใหม่':'เริ่มเรียนวันนี้เพื่อจุดไฟ');
+}
+
+/* ============ LEARN / FLASHCARD ============ */
+let queue=[],qi=0,flipped=false,sessionDone=0;
+function buildQueue(){
+  const t=todayNum();
+  const due=WORDS.filter(w=>{const p=S.w[w.id];return p&&p.seen&&p.next<=t;})
+                 .sort((a,b)=>S.w[a.id].next-S.w[b.id].next);
+  const fresh=WORDS.filter(w=>{const p=S.w[w.id];return !p||!p.seen;}).slice(0,NEW_PER_DAY);
+  return [...due,...fresh];
+}
+function startLearn(){
+  queue=buildQueue(); qi=0; sessionDone=0;
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('on'));
+  document.getElementById('navLearn').classList.add('on');
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('learn').classList.add('active');
+  window.scrollTo(0,0);
+  document.getElementById('learnDone').style.display='none';
+  document.querySelector('#learn .flash-wrap').style.display='block';
+  document.getElementById('gradeBtns').style.display='none';
+  if(queue.length===0){ finishLearn(true); return; }
+  showCard();
+}
+function showCard(){
+  flipped=false;
+  const card=document.getElementById('flashCard'); card.classList.remove('flip');
+  const w=queue[qi];
+  document.getElementById('fPos').textContent=w.pos;
+  document.getElementById('fWord').textContent=w.en;
+  document.getElementById('bWord').textContent=w.en;
+  document.getElementById('bPos').textContent=w.pos;
+  document.getElementById('bMean').textContent=w.th;
+  document.getElementById('bExEnText').textContent=w.ex;
+  document.getElementById('bExTh').textContent=w.exTh;
+  document.getElementById('gradeBtns').style.display='none';
+  document.getElementById('learnCounter').textContent=`คำที่ ${qi+1} / ${queue.length}`;
+  document.getElementById('learnProg').style.width=(qi/queue.length*100)+'%';
+}
+function flipCard(){
+  flipped=!flipped;
+  document.getElementById('flashCard').classList.toggle('flip',flipped);
+  if(flipped){
+    document.getElementById('gradeBtns').style.display='block';
+    setTimeout(speakCurrent,250);
+  }
+}
+function grade(known){
+  const w=queue[qi]; const p=wp(w.id); p.seen=true;
+  if(known){ p.c++; p.box=Math.min((p.box||0)+1,6); const days=INTERVALS[p.box]|| (p.box>=5?180:1); p.next=todayNum()+days; }
+  else { p.x++; p.box=1; p.next=todayNum(); queue.push(w); } // ผิด: กลับมาถามซ้ำท้ายรอบ
+  sessionDone++; touchStreak(); save();
+  qi++;
+  if(qi>=queue.length) finishLearn(false);
+  else showCard();
+}
+function finishLearn(empty){
+  document.querySelector('#learn .flash-wrap').style.display='none';
+  document.getElementById('gradeBtns').style.display='none';
+  document.getElementById('learnCounter').textContent='';
+  document.getElementById('learnProg').style.width='100%';
+  document.getElementById('learnDone').style.display='block';
+  document.getElementById('doneMsg').textContent = empty
+    ? 'วันนี้ไม่มีคำต้องทบทวนแล้ว เยี่ยมมาก! 🎯'
+    : `ทบทวนไป ${sessionDone} ครั้งวันนี้ • ไฟ ${fireAlive()?S.streak.count:0} วัน 🔥`;
+}
+
+/* ============ TTS ============ */
+function speak(text,rate){
+  if(!('speechSynthesis'in window))return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='en-US'; u.rate=rate||0.9;
+  speechSynthesis.speak(u);
+}
+function speakCurrent(){ if(queue[qi]) speak(queue[qi].en); }
+function speakEx(){ if(queue[qi]) speak(queue[qi].ex); }
+
+/* ============ QUIZ GAME ============ */
+let quizList=[],qqi=0,quizScore=0;
+function startQuiz(){
+  // เน้นคำที่เจอแล้ว + คำที่ยังไม่แม่น ถ้าไม่พอเติมคำใหม่
+  const seen=WORDS.filter(w=>{const p=S.w[w.id];return p&&p.seen;});
+  let pool=seen.length>=4?seen:WORDS.slice();
+  pool=pool.slice().sort(()=>Math.random()-0.5).slice(0,QUIZ_LEN);
+  quizList=pool; qqi=0; quizScore=0;
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('on'));
+  document.getElementById('navQuiz').classList.add('on');
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('quiz').classList.add('active');
+  window.scrollTo(0,0);
+  document.getElementById('quizDone').style.display='none';
+  document.getElementById('quizBody').style.display='block';
+  showQuiz();
+}
+function showQuiz(){
+  const w=quizList[qqi];
+  document.getElementById('qWord').textContent=w.en;
+  document.getElementById('quizCounter').textContent=`ข้อ ${qqi+1} / ${quizList.length} • คะแนน ${quizScore}`;
+  document.getElementById('quizProg').style.width=(qqi/quizList.length*100)+'%';
+  // options
+  const others=WORDS.filter(x=>x.id!==w.id).sort(()=>Math.random()-0.5).slice(0,3);
+  const opts=[w,...others].sort(()=>Math.random()-0.5);
+  const box=document.getElementById('qOpts'); box.innerHTML='';
+  opts.forEach(o=>{
+    const b=document.createElement('button');
+    b.className='opt'; b.textContent=o.th;
+    b.onclick=()=>answerQuiz(b,o.id===w.id,w);
+    box.appendChild(b);
+  });
+  speak(w.en);
+}
+function answerQuiz(btn,correct,w){
+  document.querySelectorAll('#qOpts .opt').forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===w.th) b.classList.add('correct');
+  });
+  const p=wp(w.id); p.seen=true;
+  if(correct){ btn.classList.add('correct'); quizScore++; p.c++; }
+  else { btn.classList.add('wrong'); p.x++; }
+  touchStreak(); save();
+  setTimeout(()=>{ qqi++; if(qqi>=quizList.length) finishQuiz(); else showQuiz(); },900);
+}
+function finishQuiz(){
+  document.getElementById('quizBody').style.display='none';
+  document.getElementById('quizCounter').textContent='';
+  document.getElementById('quizProg').style.width='100%';
+  document.getElementById('quizDone').style.display='block';
+  const pct=Math.round(quizScore/quizList.length*100);
+  document.getElementById('quizScore').textContent=`${quizScore}/${quizList.length} (${pct}%)`;
+  document.getElementById('quizEmoji').textContent= pct>=80?'🏆':pct>=50?'👍':'💪';
+  document.getElementById('quizMsg').textContent= pct>=80?'เก่งมาก! แม่นสุดๆ':pct>=50?'ดีขึ้นเรื่อยๆ ลุยต่อ!':'ไม่เป็นไร ฝึกทบทวนคำที่พลาดในหน้าเรียนนะ';
+  speak(quizScore>=quizList.length*0.8?'Excellent':'Keep going');
+}
+function speakQuiz(){ if(quizList[qqi]) speak(quizList[qqi].en); }
+
+/* ============ STATS ============ */
+function renderStats(){
+  let seen=0,mastered=0;
+  const weak=[];
+  WORDS.forEach(w=>{const p=S.w[w.id]; if(p&&p.seen){seen++; if(p.box>=5)mastered++;
+    if(p.x>0 && (p.x>=p.c || p.box<=1)) weak.push({w,x:p.x});}});
+  document.getElementById('sSeen').textContent=seen;
+  document.getElementById('sMastered').textContent=mastered;
+  document.getElementById('sWeak').textContent=weak.length;
+  const list=document.getElementById('weakList');
+  if(weak.length===0){ list.innerHTML='<div class="sub">ยังไม่มีคำที่จำไม่ได้ 👍</div>'; return; }
+  weak.sort((a,b)=>b.x-a.x);
+  list.innerHTML='';
+  weak.forEach(item=>{
+    const d=document.createElement('div'); d.className='weak-item';
+    d.innerHTML=`<div><div class="en">${item.w.en} <span class="mn">${item.w.pos}</span></div>
+      <div class="mn">${item.w.th}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+      <span class="badge">พลาด ${item.x}</span>
+      <button class="small-speak" style="font-size:20px">🔊</button></div>`;
+    d.querySelector('.small-speak').onclick=()=>speak(item.w.en);
+    list.appendChild(d);
+  });
+}
+function resetAll(){
+  if(confirm('ลบความคืบหน้าและ streak ทั้งหมด? เริ่มใหม่จากศูนย์')){
+    localStorage.removeItem(KEY); S=load(); renderStats(); renderHome(); alert('รีเซ็ตแล้ว');
+  }
+}
+
+/* ============ INIT ============ */
+// warm up TTS voices
+if('speechSynthesis'in window){ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices(); }
+if('serviceWorker'in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+renderHome();
+</script>
+</body>
+</html>
