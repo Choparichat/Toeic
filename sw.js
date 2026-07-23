@@ -1,5 +1,5 @@
-const CACHE='toeic-vocab-v1';
-const ASSETS=['./','./index.html','./manifest.json'];
+const CACHE='toeic-vocab-v3';
+const ASSETS=['./','./index.html','./book_words.js','./manifest.json'];
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
   self.skipWaiting();

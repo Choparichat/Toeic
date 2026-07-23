@@ -109,6 +109,7 @@ h1{font-size:22px;margin:4px 0 2px;}
   <section id="home" class="screen active">
     <h1>📚 TOEIC Vocab</h1>
     <div class="sub">ท่องศัพท์แบบแฟลชการ์ด + ทบทวนความจำระยะยาว</div>
+    <div style="display:inline-block;margin:8px auto 4px;padding:6px 16px;border-radius:999px;background:var(--accent);color:#fff;font-weight:800;font-size:15px">📖 คลังศัพท์ทั้งหมด <span id="wordCountTop">0</span> คำ</div>
 
     <div class="card center" style="background:linear-gradient(160deg,#7c2d12,#431407);">
       <div class="fire" id="fireIcon">🔥</div>
@@ -220,6 +221,7 @@ h1{font-size:22px;margin:4px 0 2px;}
   </nav>
 </div>
 
+<script src="book_words.js"></script>
 <script>
 /* ============ WORD DATABASE (ชุดเริ่มต้น TOEIC) ============ */
 /* เพิ่มคำจากหนังสือได้ที่นี่ รูปแบบ: {en,pos,th,ex,exTh} */
@@ -295,6 +297,14 @@ const WORDS = [
 {en:"supervisor",pos:"n.",th:"หัวหน้างาน, ผู้ควบคุมงาน",ex:"Report any problems to your supervisor.",exTh:"แจ้งปัญหาใดๆ ให้หัวหน้างานของคุณทราบ"},
 {en:"warehouse",pos:"n.",th:"คลังสินค้า, โกดัง",ex:"The goods are stored in a large warehouse.",exTh:"สินค้าถูกเก็บไว้ในคลังสินค้าขนาดใหญ่"}
 ];
+/* รวมคำศัพท์จากหนังสือ (book_words.js) แบบไม่ซ้ำกับชุดเริ่มต้น */
+if (typeof BOOK_WORDS !== 'undefined') {
+  const _seen = new Set(WORDS.map(w=>(w.en||'').trim().toLowerCase()));
+  BOOK_WORDS.forEach(w=>{
+    const k=(w.en||'').trim().toLowerCase();
+    if(k && !_seen.has(k)){ _seen.add(k); WORDS.push({en:w.en,pos:w.pos||'',th:w.th||'',ex:w.ex||'',exTh:w.exTh||''}); }
+  });
+}
 WORDS.forEach((w,i)=>w.id="w"+i);
 
 /* ============ STATE ============ */
@@ -343,6 +353,7 @@ function renderHome(){
   document.getElementById('hMastered').textContent=mastered;
   document.getElementById('hDue').textContent=due;
   document.getElementById('totalWords').textContent=WORDS.length;
+  document.getElementById('wordCountTop').textContent=WORDS.length;
   const pct=Math.round(seen/WORDS.length*100);
   document.getElementById('homeProg').style.width=pct+'%';
   document.getElementById('progText').textContent=`เจอแล้ว ${seen}/${WORDS.length} คำ (${pct}%)`;
@@ -388,6 +399,8 @@ function showCard(){
   document.getElementById('bMean').textContent=w.th;
   document.getElementById('bExEnText').textContent=w.ex;
   document.getElementById('bExTh').textContent=w.exTh;
+  document.getElementById('bExEn').style.display = w.ex ? '' : 'none';
+  document.getElementById('bExTh').style.display = w.exTh ? '' : 'none';
   document.getElementById('gradeBtns').style.display='none';
   document.getElementById('learnCounter').textContent=`คำที่ ${qi+1} / ${queue.length}`;
   document.getElementById('learnProg').style.width=(qi/queue.length*100)+'%';
