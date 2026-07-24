@@ -209,6 +209,12 @@ h1{font-size:22px;margin:4px 0 2px;}
       <div style="font-weight:700;margin-bottom:8px">🔴 คำที่จำไม่ค่อยได้</div>
       <div id="weakList"><div class="sub">ยังไม่มีข้อมูล เริ่มเรียนก่อนนะ</div></div>
     </div>
+    <div class="card" style="margin-top:4px">
+      <div style="font-weight:700;margin-bottom:6px">💾 สำรอง / กู้คืนความคืบหน้า</div>
+      <div class="sub" style="margin-bottom:10px">ก๊อปเก็บไว้กันข้อมูลหาย เวลาเปลี่ยนเครื่องหรือลงแอปใหม่ก็วางกลับได้</div>
+      <button class="btn gold" onclick="backupProgress()">📤 สำรองข้อมูล (คัดลอก)</button>
+      <button class="btn ghost" onclick="restoreProgress()">📥 กู้คืนข้อมูล (วาง)</button>
+    </div>
     <button class="btn ghost" onclick="resetAll()">♻️ รีเซ็ตความคืบหน้าทั้งหมด</button>
   </section>
 
@@ -530,6 +536,29 @@ function resetAll(){
   if(confirm('ลบความคืบหน้าและ streak ทั้งหมด? เริ่มใหม่จากศูนย์')){
     localStorage.removeItem(KEY); S=load(); renderStats(); renderHome(); alert('รีเซ็ตแล้ว');
   }
+}
+/* ---- สำรอง/กู้คืนความคืบหน้า ---- */
+function backupProgress(){
+  const data=localStorage.getItem(KEY)||JSON.stringify(S);
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(data).then(
+      ()=>alert('คัดลอกข้อมูลสำรองแล้ว ✅\nเอาไปวางเก็บไว้ใน Notes หรือที่ไหนก็ได้'),
+      ()=>window.prompt('คัดลอกข้อความนี้เก็บไว้ (กดค้างเพื่อ Copy):',data)
+    );
+  } else {
+    window.prompt('คัดลอกข้อความนี้เก็บไว้ (กดค้างเพื่อ Copy):',data);
+  }
+}
+function restoreProgress(){
+  const t=window.prompt('วางข้อมูลสำรองที่นี่ แล้วกด OK:');
+  if(!t) return;
+  try{
+    const obj=JSON.parse(t.trim());
+    if(!obj||typeof obj!=='object'||!obj.w){ alert('ข้อมูลไม่ถูกต้อง ❌'); return; }
+    localStorage.setItem(KEY,JSON.stringify(obj));
+    S=load(); renderStats(); renderHome();
+    alert('กู้คืนข้อมูลสำเร็จ ✅');
+  }catch(e){ alert('ข้อมูลไม่ถูกต้อง อ่านไม่ออก ❌'); }
 }
 
 /* ============ INIT ============ */
