@@ -1,4 +1,4 @@
-const CACHE='toeic-vocab-v4';
+const CACHE='toeic-vocab-v5';
 const ASSETS=['./','./index.html','./book_words.js','./manifest.json'];
 
 self.addEventListener('install',e=>{
