@@ -396,7 +396,11 @@ function startLearn(){
 }
 function showCard(){
   flipped=false;
-  const card=document.getElementById('flashCard'); card.classList.remove('flip');
+  const card=document.getElementById('flashCard');
+  // สแนปกลับด้านหน้าแบบไม่มีอนิเมชัน เพื่อไม่ให้เห็นเฉลยของการ์ดถัดไปแว่บระหว่างพลิก
+  card.style.transition='none';
+  card.classList.remove('flip');
+  void card.offsetWidth;            // บังคับ reflow ให้สแนปมีผลทันที
   const w=queue[qi];
   document.getElementById('fPos').textContent=w.pos;
   document.getElementById('fWord').textContent=w.en;
@@ -410,6 +414,8 @@ function showCard(){
   document.getElementById('gradeBtns').style.display='none';
   document.getElementById('learnCounter').textContent=`คำที่ ${qi+1} / ${queue.length}`;
   document.getElementById('learnProg').style.width=(qi/queue.length*100)+'%';
+  // เปิดอนิเมชันพลิกกลับคืนสำหรับการ์ดใบใหม่ (หลังสแนปเสร็จแล้ว)
+  requestAnimationFrame(()=>{ card.style.transition=''; });
 }
 function flipCard(){
   flipped=!flipped;
