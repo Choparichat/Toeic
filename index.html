@@ -100,6 +100,19 @@ h1{font-size:22px;margin:4px 0 2px;}
 .center{text-align:center;}
 .big-emoji{font-size:64px;margin:20px 0 8px;}
 .mastered-tag{color:var(--gold);font-size:12px;font-weight:700;}
+
+/* Games */
+.match-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.mtile{background:var(--card);border:2px solid transparent;border-radius:12px;padding:14px 8px;font-size:15px;cursor:pointer;color:var(--text);min-height:58px;display:flex;align-items:center;justify-content:center;text-align:center;font-family:inherit;line-height:1.3;}
+.mtile.sel{border-color:var(--accent);}
+.mtile.done{opacity:.3;pointer-events:none;border-color:var(--accent2);}
+.mtile.bad{border-color:var(--danger);}
+.sp-answer{min-height:44px;letter-spacing:3px;font-size:26px;font-weight:800;margin:14px 0 4px;border-bottom:2px dashed var(--card2);padding-bottom:8px;cursor:pointer;}
+.sp-answer.ok{color:var(--accent2);}
+.sp-answer.bad{color:var(--danger);}
+.sp-pool{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;}
+.sp-chip{background:var(--card2);border:none;color:var(--text);font-size:20px;font-weight:700;min-width:44px;height:46px;padding:0 6px;border-radius:10px;cursor:pointer;font-family:inherit;}
+.sp-chip.used{opacity:.2;pointer-events:none;}
 </style>
 </head>
 <body>
@@ -192,6 +205,86 @@ h1{font-size:22px;margin:4px 0 2px;}
       <h1 id="quizScore">—</h1>
       <div class="sub" id="quizMsg"></div>
       <button class="btn gold" onclick="startQuiz()">เล่นอีกรอบ</button>
+      <button class="btn ghost" onclick="openGames()">เลือกเกมอื่น</button>
+      <button class="btn ghost" onclick="show('home')">กลับหน้าหลัก</button>
+    </div>
+  </section>
+
+  <!-- GAMES MENU -->
+  <section id="games" class="screen">
+    <h1>🎮 เกม</h1>
+    <div class="sub">เลือกเกมฝึกจำ — สลับเล่นช่วยให้จำแม่นขึ้น</div>
+    <button class="btn gold" onclick="startQuiz()">🧠 ควิซช้อยส์<span style="display:block;font-size:12px;font-weight:400;opacity:.9">เห็นคำอังกฤษ เลือกคำแปลไทย</span></button>
+    <button class="btn" onclick="startMatch()">🔗 จับคู่คำศัพท์<span style="display:block;font-size:12px;font-weight:400;opacity:.9">จับคู่อังกฤษ ↔ ไทย</span></button>
+    <button class="btn" onclick="startFill()">✍️ เติมคำในประโยค<span style="display:block;font-size:12px;font-weight:400;opacity:.9">เลือกคำเติมช่องว่างในประโยค</span></button>
+    <button class="btn" onclick="startListen()">🎧 ทายจากเสียง<span style="display:block;font-size:12px;font-weight:400;opacity:.9">ฟังเสียง เลือกความหมาย</span></button>
+    <button class="btn" onclick="startSpell()">🔤 สะกดคำ<span style="display:block;font-size:12px;font-weight:400;opacity:.9">เรียงตัวอักษรจากคำแปล</span></button>
+  </section>
+
+  <!-- GAME: MATCH -->
+  <section id="gMatch" class="screen">
+    <div class="counter" id="matchCounter"></div>
+    <div id="matchGrid" class="match-grid"></div>
+    <button class="btn ghost" onclick="openGames()" style="margin-top:16px">↩ กลับเมนูเกม</button>
+  </section>
+
+  <!-- GAME: FILL -->
+  <section id="gFill" class="screen">
+    <div class="counter" id="fillCounter"></div>
+    <div class="progress-bar"><div id="fillProg" style="width:0%"></div></div>
+    <div id="fillBody">
+      <div class="card">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px">เติมคำที่หายไปในประโยค</div>
+        <div id="fillSentence" style="font-size:18px;line-height:1.7"></div>
+        <div id="fillHint" style="color:var(--gold);font-size:14px;margin-top:12px"></div>
+      </div>
+      <div id="fillOpts"></div>
+    </div>
+  </section>
+
+  <!-- GAME: LISTEN -->
+  <section id="gListen" class="screen">
+    <div class="counter" id="lisCounter"></div>
+    <div class="progress-bar"><div id="lisProg" style="width:0%"></div></div>
+    <div id="lisBody">
+      <div class="card center">
+        <div style="font-size:13px;color:var(--muted)">ฟังเสียงแล้วเลือกความหมาย</div>
+        <button class="speak" style="width:88px;height:88px;font-size:38px;margin:16px auto" onclick="speakListen()">🔊</button>
+        <div style="font-size:12px;color:var(--muted)">แตะเพื่อฟังอีกครั้ง</div>
+        <div id="lisReveal" style="font-size:20px;font-weight:800;margin-top:10px;min-height:24px;color:var(--accent2)"></div>
+      </div>
+      <div id="lisOpts"></div>
+    </div>
+  </section>
+
+  <!-- GAME: SPELL -->
+  <section id="gSpell" class="screen">
+    <div class="counter" id="spCounter"></div>
+    <div class="progress-bar"><div id="spProg" style="width:0%"></div></div>
+    <div id="spBody">
+      <div class="card center">
+        <div style="font-size:13px;color:var(--muted)">เรียงตัวอักษรให้เป็นคำที่แปลว่า</div>
+        <div id="spMean" style="font-size:22px;font-weight:800;margin:8px 0;color:#bbf7d0"></div>
+        <div style="font-size:12px;color:var(--gold)" id="spPos"></div>
+        <div id="spAnswer" class="sp-answer">…</div>
+        <div style="font-size:11px;color:var(--muted)">แตะช่องคำตอบเพื่อลบตัวท้าย</div>
+        <div id="spPool" class="sp-pool"></div>
+        <div style="margin-top:14px">
+          <button class="btn ghost" style="display:inline-block;width:auto;padding:10px 20px;margin:0 4px" onclick="clearSpell()">ล้าง</button>
+          <button class="btn ghost" style="display:inline-block;width:auto;padding:10px 20px;margin:0 4px" onclick="revealSpell()">เฉลย</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GAME OVER (shared) -->
+  <section id="gameOver" class="screen">
+    <div class="center" style="padding-top:36px">
+      <div class="big-emoji" id="goEmoji">🏆</div>
+      <h1 id="goScore">—</h1>
+      <div class="sub" id="goMsg"></div>
+      <button class="btn gold" id="goReplay">เล่นอีกรอบ</button>
+      <button class="btn ghost" onclick="openGames()">เลือกเกมอื่น</button>
       <button class="btn ghost" onclick="show('home')">กลับหน้าหลัก</button>
     </div>
   </section>
@@ -222,7 +315,7 @@ h1{font-size:22px;margin:4px 0 2px;}
   <nav class="nav">
     <button id="navHome" class="on" onclick="show('home')"><span class="ic">🏠</span>หน้าหลัก</button>
     <button id="navLearn" onclick="startLearn()"><span class="ic">🃏</span>เรียน</button>
-    <button id="navQuiz" onclick="startQuiz()"><span class="ic">🎮</span>เกม</button>
+    <button id="navQuiz" onclick="openGames()"><span class="ic">🎮</span>เกม</button>
     <button id="navStats" onclick="show('stats')"><span class="ic">📊</span>สถิติ</button>
   </nav>
 </div>
@@ -317,6 +410,7 @@ WORDS.forEach((w,i)=>w.id="w"+i);
 const KEY="toeic_vocab_v1";
 const INTERVALS={1:3,2:7,3:30,4:90}; // box -> days ; box>=5 = mastered
 const NEW_PER_DAY=15, QUIZ_LEN=10;
+const MAX_REVIEW_PER_DAY=40; // เพดานทบทวนต่อวัน ส่วนเกินเลื่อนไปวันถัดไปอัตโนมัติ
 let S=load();
 
 function todayNum(){const d=new Date();return Math.floor(new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime()/86400000);}
@@ -357,7 +451,11 @@ function renderHome(){
   WORDS.forEach(w=>{const p=S.w[w.id]; if(p&&p.seen){seen++; if(p.box>=1)learned++; if(p.box>=5)mastered++; if(p.next<=t)due++;}});
   document.getElementById('hLearned').textContent=learned;
   document.getElementById('hMastered').textContent=mastered;
-  document.getElementById('hDue').textContent=due;
+  document.getElementById('hDue').textContent=Math.min(due,MAX_REVIEW_PER_DAY);
+  // ถ้ามีคำค้างเกินเพดาน โชว์เป็นหมายเหตุเล็กๆ ใต้ตัวเลข
+  const backlog=Math.max(0,due-MAX_REVIEW_PER_DAY);
+  const dueLbl=document.getElementById('hDue').nextElementSibling;
+  if(dueLbl) dueLbl.textContent = backlog>0 ? `ต้องทบทวนวันนี้ (ค้าง ${backlog})` : 'ต้องทบทวนวันนี้';
   document.getElementById('totalWords').textContent=WORDS.length;
   document.getElementById('wordCountTop').textContent=WORDS.length;
   const pct=Math.round(seen/WORDS.length*100);
@@ -377,7 +475,8 @@ let queue=[],qi=0,flipped=false,sessionDone=0;
 function buildQueue(){
   const t=todayNum();
   const due=WORDS.filter(w=>{const p=S.w[w.id];return p&&p.seen&&p.next<=t;})
-                 .sort((a,b)=>S.w[a.id].next-S.w[b.id].next);
+                 .sort((a,b)=>S.w[a.id].next-S.w[b.id].next)
+                 .slice(0,MAX_REVIEW_PER_DAY); // ทวนไม่เกินเพดาน (เอาคำที่ค้างนานสุดก่อน) ส่วนเกินยัง due อยู่ เลื่อนไปวันถัดไปเอง
   const fresh=WORDS.filter(w=>{const p=S.w[w.id];return !p||!p.seen;}).slice(0,NEW_PER_DAY);
   return [...due,...fresh];
 }
@@ -513,6 +612,198 @@ function finishQuiz(){
   speak(quizScore>=quizList.length*0.8?'Excellent':'Keep going');
 }
 function speakQuiz(){ if(quizList[qqi]) speak(quizList[qqi].en); }
+
+/* ============ GAME HUB + MINI GAMES ============ */
+function openGames(){ navGameOn('games'); }
+function navGameOn(screenId){
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('on'));
+  document.getElementById('navQuiz').classList.add('on');
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  window.scrollTo(0,0);
+}
+function gamePool(n){
+  const seen=WORDS.filter(w=>{const p=S.w[w.id];return p&&p.seen;});
+  let pool=seen.length>=n?seen:WORDS.slice();
+  return pool.slice().sort(()=>Math.random()-0.5).slice(0,n);
+}
+function gameOver(score,total,replayFn,msg){
+  navGameOn('gameOver');
+  const pct=total?Math.round(score/total*100):100;
+  document.getElementById('goEmoji').textContent=pct>=80?'🏆':pct>=50?'👍':'💪';
+  document.getElementById('goScore').textContent= total ? (score+'/'+total+' ('+pct+'%)') : 'เยี่ยม!';
+  document.getElementById('goMsg').textContent= msg || (pct>=80?'เก่งมาก! แม่นสุดๆ':pct>=50?'ดีขึ้นเรื่อยๆ ลุยต่อ!':'ไม่เป็นไร ฝึกต่อได้');
+  document.getElementById('goReplay').onclick=replayFn;
+  try{ speak(pct>=80?'Excellent':'Good job'); }catch(e){}
+}
+
+/* --- MATCH --- */
+let matchTiles=[],matchSel=-1,matchLeft=0,matchMoves=0;
+function startMatch(){
+  const pool=gamePool(5);
+  matchTiles=[];
+  pool.forEach(w=>{matchTiles.push({wid:w.id,text:w.en,type:'en',done:false});matchTiles.push({wid:w.id,text:w.th,type:'th',done:false});});
+  matchTiles.sort(()=>Math.random()-0.5);
+  matchSel=-1; matchLeft=pool.length; matchMoves=0;
+  navGameOn('gMatch'); renderMatch();
+}
+function renderMatch(){
+  document.getElementById('matchCounter').textContent='จับคู่ให้ครบ • เหลือ '+matchLeft+' คู่ • '+matchMoves+' ครั้ง';
+  const g=document.getElementById('matchGrid'); g.style.display='grid'; g.innerHTML='';
+  matchTiles.forEach((t,i)=>{
+    const b=document.createElement('button');
+    b.className='mtile'+(t.done?' done':'')+(i===matchSel?' sel':'');
+    b.textContent=t.text; b.onclick=()=>pickMatch(i);
+    g.appendChild(b);
+  });
+}
+function pickMatch(i){
+  const t=matchTiles[i]; if(t.done) return;
+  if(matchSel===i){ matchSel=-1; renderMatch(); return; }
+  if(matchSel<0){ matchSel=i; renderMatch(); return; }
+  const a=matchTiles[matchSel]; matchMoves++;
+  if(a.wid===t.wid && a.type!==t.type){
+    a.done=t.done=true; matchLeft--; matchSel=-1;
+    const p=wp(a.wid); p.seen=true; p.c++; touchStreak(); save();
+    renderMatch();
+    if(matchLeft===0) setTimeout(()=>gameOver(1,0,startMatch,'จับคู่ครบ! ใช้ไป '+matchMoves+' ครั้ง'),400);
+  } else {
+    const idx=matchSel; matchSel=-1; renderMatch();
+    const g=document.getElementById('matchGrid');
+    if(g.children[i])g.children[i].classList.add('bad');
+    if(g.children[idx])g.children[idx].classList.add('bad');
+    const p=wp(a.wid); p.x++; save();
+    setTimeout(renderMatch,550);
+  }
+}
+
+/* --- FILL IN THE BLANK --- */
+function escapeReg(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+function blankSentence(w){
+  const ex=w.ex; if(!ex) return null;
+  const re=new RegExp('\\b'+escapeReg(w.en)+'\\b','i');
+  if(re.test(ex)) return ex.replace(re,'_____');
+  const stem=w.en.slice(0,Math.max(3,w.en.length-3));
+  if(/^[A-Za-z]+$/.test(stem)){
+    const re2=new RegExp('\\b'+escapeReg(stem)+'[A-Za-z]*\\b','i');
+    if(re2.test(ex)) return ex.replace(re2,'_____');
+  }
+  return null;
+}
+let fillList=[],fidx=0,fillScore=0;
+function startFill(){
+  const withEx=WORDS.filter(w=>w.ex && blankSentence(w));
+  if(withEx.length<4){ openGames(); alert('ยังมีประโยคตัวอย่างไม่พอสำหรับเกมนี้ เดี๋ยวเติมตัวอย่างเพิ่มแล้วเล่นได้เยอะขึ้น'); return; }
+  fillList=withEx.slice().sort(()=>Math.random()-0.5).slice(0,QUIZ_LEN);
+  fidx=0; fillScore=0; navGameOn('gFill');
+  document.getElementById('fillBody').style.display='block';
+  showFill();
+}
+function showFill(){
+  const w=fillList[fidx];
+  document.getElementById('fillSentence').innerHTML=blankSentence(w);
+  document.getElementById('fillHint').textContent='แปล: '+w.th;
+  document.getElementById('fillCounter').textContent='ข้อ '+(fidx+1)+' / '+fillList.length+' • คะแนน '+fillScore;
+  document.getElementById('fillProg').style.width=(fidx/fillList.length*100)+'%';
+  const others=WORDS.filter(x=>x.id!==w.id).sort(()=>Math.random()-0.5).slice(0,3);
+  const opts=[w,...others].sort(()=>Math.random()-0.5);
+  const box=document.getElementById('fillOpts'); box.innerHTML='';
+  opts.forEach(o=>{const b=document.createElement('button');b.className='opt';b.textContent=o.en;b.onclick=()=>answerFill(b,o.id===w.id,w);box.appendChild(b);});
+}
+function answerFill(btn,correct,w){
+  document.querySelectorAll('#fillOpts .opt').forEach(b=>{b.disabled=true;if(b.textContent===w.en)b.classList.add('correct');});
+  const p=wp(w.id); p.seen=true;
+  if(correct){btn.classList.add('correct');fillScore++;p.c++;}else{btn.classList.add('wrong');p.x++;}
+  touchStreak(); save();
+  document.getElementById('fillSentence').innerHTML=blankSentence(w).replace('_____','<span style="color:var(--accent2);font-weight:800">'+w.en+'</span>');
+  try{speak(w.en);}catch(e){}
+  setTimeout(()=>{fidx++; if(fidx>=fillList.length) gameOver(fillScore,fillList.length,startFill); else showFill();},1300);
+}
+
+/* --- LISTENING --- */
+let lisList=[],lidx=0,lisScore=0;
+function startListen(){
+  lisList=gamePool(QUIZ_LEN); lidx=0; lisScore=0; navGameOn('gListen');
+  document.getElementById('lisBody').style.display='block';
+  showListen();
+}
+function showListen(){
+  const w=lisList[lidx];
+  document.getElementById('lisReveal').textContent='';
+  document.getElementById('lisCounter').textContent='ข้อ '+(lidx+1)+' / '+lisList.length+' • คะแนน '+lisScore;
+  document.getElementById('lisProg').style.width=(lidx/lisList.length*100)+'%';
+  const others=WORDS.filter(x=>x.id!==w.id).sort(()=>Math.random()-0.5).slice(0,3);
+  const opts=[w,...others].sort(()=>Math.random()-0.5);
+  const box=document.getElementById('lisOpts'); box.innerHTML='';
+  opts.forEach(o=>{const b=document.createElement('button');b.className='opt';b.textContent=o.th;b.onclick=()=>answerListen(b,o.id===w.id,w);box.appendChild(b);});
+  setTimeout(()=>{try{speak(w.en);}catch(e){}},250);
+}
+function speakListen(){ if(lisList[lidx]) try{speak(lisList[lidx].en);}catch(e){} }
+function answerListen(btn,correct,w){
+  document.querySelectorAll('#lisOpts .opt').forEach(b=>{b.disabled=true;if(b.textContent===w.th)b.classList.add('correct');});
+  document.getElementById('lisReveal').textContent=w.en+'  '+w.pos;
+  const p=wp(w.id); p.seen=true;
+  if(correct){btn.classList.add('correct');lisScore++;p.c++;}else{btn.classList.add('wrong');p.x++;}
+  touchStreak(); save();
+  setTimeout(()=>{lidx++; if(lidx>=lisList.length) gameOver(lisScore,lisList.length,startListen); else showListen();},1100);
+}
+
+/* --- SPELLING / UNSCRAMBLE --- */
+let spList=[],sidx=0,spScore=0,spDisplay=[],spAns=[];
+function startSpell(){
+  const cand=WORDS.filter(w=>/^[A-Za-z][A-Za-z'-]*$/.test(w.en)&&w.en.length>=3&&w.en.length<=11);
+  spList=cand.slice().sort(()=>Math.random()-0.5).slice(0,QUIZ_LEN);
+  sidx=0; spScore=0; navGameOn('gSpell');
+  document.getElementById('spBody').style.display='block';
+  showSpell();
+}
+function showSpell(){
+  const w=spList[sidx];
+  document.getElementById('spMean').textContent=w.th;
+  document.getElementById('spPos').textContent=w.pos;
+  document.getElementById('spCounter').textContent='ข้อ '+(sidx+1)+' / '+spList.length+' • คะแนน '+spScore;
+  document.getElementById('spProg').style.width=(sidx/spList.length*100)+'%';
+  spDisplay=w.en.split('').map(ch=>({ch,used:false}));
+  spDisplay.sort(()=>Math.random()-0.5);
+  spAns=[]; renderSpell();
+}
+function renderSpell(){
+  const ansEl=document.getElementById('spAnswer');
+  ansEl.className='sp-answer';
+  ansEl.textContent=spAns.map(x=>x.ch).join('')||'…';
+  ansEl.onclick=()=>{ if(spAns.length){ const last=spAns.pop(); last.used=false; renderSpell(); } };
+  const pool=document.getElementById('spPool'); pool.innerHTML='';
+  spDisplay.forEach(l=>{
+    const b=document.createElement('button');
+    b.className='sp-chip'+(l.used?' used':'');
+    b.textContent=l.ch;
+    b.onclick=()=>{ if(l.used)return; l.used=true; spAns.push(l); renderSpell(); checkSpell(); };
+    pool.appendChild(b);
+  });
+}
+function checkSpell(){
+  const w=spList[sidx];
+  if(spAns.length<w.en.length) return;
+  const guess=spAns.map(x=>x.ch).join('');
+  const p=wp(w.id); p.seen=true;
+  if(guess.toLowerCase()===w.en.toLowerCase()){
+    document.getElementById('spAnswer').className='sp-answer ok';
+    spScore++; p.c++; touchStreak(); save(); try{speak(w.en);}catch(e){}
+    setTimeout(nextSpell,900);
+  } else {
+    document.getElementById('spAnswer').className='sp-answer bad';
+    p.x++; save();
+    setTimeout(()=>{ spDisplay.forEach(l=>l.used=false); spAns=[]; renderSpell(); },700);
+  }
+}
+function clearSpell(){ spDisplay.forEach(l=>l.used=false); spAns=[]; renderSpell(); }
+function revealSpell(){
+  const w=spList[sidx]; const p=wp(w.id); p.seen=true; p.x++; save();
+  const ansEl=document.getElementById('spAnswer'); ansEl.className='sp-answer'; ansEl.textContent=w.en;
+  try{speak(w.en);}catch(e){}
+  setTimeout(nextSpell,1100);
+}
+function nextSpell(){ sidx++; if(sidx>=spList.length) gameOver(spScore,spList.length,startSpell); else showSpell(); }
 
 /* ============ STATS ============ */
 function renderStats(){
