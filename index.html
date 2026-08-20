@@ -270,8 +270,9 @@ h1{font-size:22px;margin:4px 0 2px;}
         <div style="font-size:11px;color:var(--muted)">แตะช่องคำตอบเพื่อลบตัวท้าย</div>
         <div id="spPool" class="sp-pool"></div>
         <div style="margin-top:14px">
-          <button class="btn ghost" style="display:inline-block;width:auto;padding:10px 20px;margin:0 4px" onclick="clearSpell()">ล้าง</button>
-          <button class="btn ghost" style="display:inline-block;width:auto;padding:10px 20px;margin:0 4px" onclick="revealSpell()">เฉลย</button>
+          <button class="btn ghost" style="display:inline-block;width:auto;padding:10px 16px;margin:4px 3px" onclick="clearSpell()">ล้าง</button>
+          <button class="btn gold" style="display:inline-block;width:auto;padding:10px 16px;margin:4px 3px" onclick="peekSpell()">🙈 จำไม่ได้</button>
+          <button class="btn ghost" style="display:inline-block;width:auto;padding:10px 16px;margin:4px 3px" onclick="revealSpell()">เฉลย+ข้าม</button>
         </div>
       </div>
     </div>
@@ -301,6 +302,10 @@ h1{font-size:22px;margin:4px 0 2px;}
     <div class="card">
       <div style="font-weight:700;margin-bottom:8px">🔴 คำที่จำไม่ค่อยได้</div>
       <div id="weakList"><div class="sub">ยังไม่มีข้อมูล เริ่มเรียนก่อนนะ</div></div>
+    </div>
+    <div class="card" style="margin-top:4px">
+      <div style="font-weight:700;margin-bottom:8px">🏅 ประวัติการเล่นเกม</div>
+      <div id="histList"><div class="sub">ยังไม่มีสถิติ ลองเล่นเกมดูสิ</div></div>
     </div>
     <div class="card" style="margin-top:4px">
       <div style="font-weight:700;margin-bottom:6px">💾 สำรอง / กู้คืนความคืบหน้า</div>
@@ -606,6 +611,7 @@ function finishQuiz(){
   document.getElementById('quizProg').style.width='100%';
   document.getElementById('quizDone').style.display='block';
   const pct=Math.round(quizScore/quizList.length*100);
+  recordScore({game:'ควิซช้อยส์',score:quizScore,total:quizList.length});
   document.getElementById('quizScore').textContent=`${quizScore}/${quizList.length} (${pct}%)`;
   document.getElementById('quizEmoji').textContent= pct>=80?'🏆':pct>=50?'👍':'💪';
   document.getElementById('quizMsg').textContent= pct>=80?'เก่งมาก! แม่นสุดๆ':pct>=50?'ดีขึ้นเรื่อยๆ ลุยต่อ!':'ไม่เป็นไร ฝึกทบทวนคำที่พลาดในหน้าเรียนนะ';
@@ -635,6 +641,14 @@ function gameOver(score,total,replayFn,msg){
   document.getElementById('goMsg').textContent= msg || (pct>=80?'เก่งมาก! แม่นสุดๆ':pct>=50?'ดีขึ้นเรื่อยๆ ลุยต่อ!':'ไม่เป็นไร ฝึกต่อได้');
   document.getElementById('goReplay').onclick=replayFn;
   try{ speak(pct>=80?'Excellent':'Good job'); }catch(e){}
+}
+/* เก็บประวัติคะแนนแต่ละรอบ (เก็บล่าสุด 60 รอบ) */
+function recordScore(obj){
+  if(!S.history) S.history=[];
+  obj.ts=Date.now(); obj.day=todayNum();
+  S.history.unshift(obj);
+  if(S.history.length>60) S.history.length=60;
+  save();
 }
 
 /* --- MATCH --- */
@@ -666,7 +680,7 @@ function pickMatch(i){
     a.done=t.done=true; matchLeft--; matchSel=-1;
     const p=wp(a.wid); p.seen=true; p.c++; touchStreak(); save();
     renderMatch();
-    if(matchLeft===0) setTimeout(()=>gameOver(1,0,startMatch,'จับคู่ครบ! ใช้ไป '+matchMoves+' ครั้ง'),400);
+    if(matchLeft===0){ recordScore({game:'จับคู่คำศัพท์',moves:matchMoves,pairs:5}); setTimeout(()=>gameOver(1,0,startMatch,'จับคู่ครบ! ใช้ไป '+matchMoves+' ครั้ง'),400); }
   } else {
     const idx=matchSel; matchSel=-1; renderMatch();
     const g=document.getElementById('matchGrid');
@@ -702,7 +716,7 @@ function startFill(){
 function showFill(){
   const w=fillList[fidx];
   document.getElementById('fillSentence').innerHTML=blankSentence(w);
-  document.getElementById('fillHint').textContent='แปล: '+w.th;
+  document.getElementById('fillHint').textContent=''; // ซ่อนคำแปลไว้ก่อน โชว์ตอนเฉลย
   document.getElementById('fillCounter').textContent='ข้อ '+(fidx+1)+' / '+fillList.length+' • คะแนน '+fillScore;
   document.getElementById('fillProg').style.width=(fidx/fillList.length*100)+'%';
   const others=WORDS.filter(x=>x.id!==w.id).sort(()=>Math.random()-0.5).slice(0,3);
@@ -716,8 +730,9 @@ function answerFill(btn,correct,w){
   if(correct){btn.classList.add('correct');fillScore++;p.c++;}else{btn.classList.add('wrong');p.x++;}
   touchStreak(); save();
   document.getElementById('fillSentence').innerHTML=blankSentence(w).replace('_____','<span style="color:var(--accent2);font-weight:800">'+w.en+'</span>');
+  document.getElementById('fillHint').textContent='แปล: '+w.th; // เฉลยคำแปลตอนนี้
   try{speak(w.en);}catch(e){}
-  setTimeout(()=>{fidx++; if(fidx>=fillList.length) gameOver(fillScore,fillList.length,startFill); else showFill();},1300);
+  setTimeout(()=>{fidx++; if(fidx>=fillList.length){ recordScore({game:'เติมคำในประโยค',score:fillScore,total:fillList.length}); gameOver(fillScore,fillList.length,startFill);} else showFill();},1400);
 }
 
 /* --- LISTENING --- */
@@ -745,7 +760,7 @@ function answerListen(btn,correct,w){
   const p=wp(w.id); p.seen=true;
   if(correct){btn.classList.add('correct');lisScore++;p.c++;}else{btn.classList.add('wrong');p.x++;}
   touchStreak(); save();
-  setTimeout(()=>{lidx++; if(lidx>=lisList.length) gameOver(lisScore,lisList.length,startListen); else showListen();},1100);
+  setTimeout(()=>{lidx++; if(lidx>=lisList.length){ recordScore({game:'ทายจากเสียง',score:lisScore,total:lisList.length}); gameOver(lisScore,lisList.length,startListen);} else showListen();},1100);
 }
 
 /* --- SPELLING / UNSCRAMBLE --- */
@@ -803,9 +818,41 @@ function revealSpell(){
   try{speak(w.en);}catch(e){}
   setTimeout(nextSpell,1100);
 }
-function nextSpell(){ sidx++; if(sidx>=spList.length) gameOver(spScore,spList.length,startSpell); else showSpell(); }
+/* จำไม่ได้: โชว์คำเต็มให้ดูสักครู่ แล้วล้างให้ลองสะกดใหม่ (ไม่ข้ามข้อ) */
+function peekSpell(){
+  const w=spList[sidx]; const p=wp(w.id); p.hint=(p.hint||0)+1; p.seen=true; save();
+  const ansEl=document.getElementById('spAnswer'); ansEl.className='sp-answer'; ansEl.textContent=w.en;
+  const pool=document.getElementById('spPool'); pool.style.opacity='.2';
+  try{speak(w.en);}catch(e){}
+  setTimeout(()=>{ pool.style.opacity='1'; spDisplay.forEach(l=>l.used=false); spAns=[]; renderSpell(); },1700);
+}
+function nextSpell(){ sidx++; if(sidx>=spList.length){ recordScore({game:'สะกดคำ',score:spScore,total:spList.length}); gameOver(spScore,spList.length,startSpell);} else showSpell(); }
 
 /* ============ STATS ============ */
+function timeAgo(ts){
+  if(!ts) return '';
+  const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60) return 'เมื่อครู่';
+  if(s<3600) return Math.floor(s/60)+' นาทีที่แล้ว';
+  if(s<86400) return Math.floor(s/3600)+' ชม.ที่แล้ว';
+  return Math.floor(s/86400)+' วันที่แล้ว';
+}
+function renderHistory(){
+  const hl=document.getElementById('histList'); if(!hl) return;
+  const hist=S.history||[];
+  if(hist.length===0){ hl.innerHTML='<div class="sub">ยังไม่มีสถิติ ลองเล่นเกมดูสิ</div>'; return; }
+  hl.innerHTML='';
+  hist.slice(0,15).forEach(h=>{
+    const d=document.createElement('div'); d.className='weak-item';
+    let right;
+    if(h.moves!=null){ right='<span class="badge" style="background:var(--accent)">'+h.moves+' ครั้ง</span>'; }
+    else { const pct=h.total?Math.round(h.score/h.total*100):0;
+      const col=pct>=80?'var(--accent2)':pct>=50?'var(--gold)':'var(--danger)';
+      right='<span class="badge" style="background:'+col+'">'+h.score+'/'+h.total+'</span>'; }
+    d.innerHTML='<div><div class="en" style="font-size:14px">'+h.game+'</div><div class="mn">'+timeAgo(h.ts)+'</div></div><div>'+right+'</div>';
+    hl.appendChild(d);
+  });
+}
 function renderStats(){
   let seen=0,mastered=0;
   const weak=[];
@@ -814,6 +861,7 @@ function renderStats(){
   document.getElementById('sSeen').textContent=seen;
   document.getElementById('sMastered').textContent=mastered;
   document.getElementById('sWeak').textContent=weak.length;
+  renderHistory();
   const list=document.getElementById('weakList');
   if(weak.length===0){ list.innerHTML='<div class="sub">ยังไม่มีคำที่จำไม่ได้ 👍</div>'; return; }
   weak.sort((a,b)=>b.x-a.x);
