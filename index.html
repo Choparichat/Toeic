@@ -532,13 +532,19 @@ function flipCard(){
 function grade(known){
   const w=queue[qi]; const p=wp(w.id); p.seen=true;
   if(known){ p.c++; p.box=Math.min((p.box||0)+1,6); const days=INTERVALS[p.box]|| (p.box>=5?180:1); p.next=todayNum()+days; }
-  else { p.x++; p.box=1; p.next=todayNum(); queue.push(w); } // ผิด: กลับมาถามซ้ำท้ายรอบ
+  else { p.x++; p.box=1; p.next=todayNum()+1; queue.push(w); } // ผิด: ถามซ้ำในรอบนี้ แต่ตั้งทวนใหม่พรุ่งนี้ (ไม่เด้งเป็นคำทบทวนของวันนี้)
   sessionDone++; touchStreak(); save();
   qi++;
   if(qi>=queue.length) finishLearn(false);
   else showCard();
 }
 function finishLearn(empty){
+  if(!empty){
+    // เรียนครบรอบของวันนี้แล้ว → เลื่อนคำที่ยังค้าง (ส่วนที่เกินเพดาน 40) ไปพรุ่งนี้ ไม่ให้เด้งซ้ำวันนี้
+    const t=todayNum();
+    WORDS.forEach(w=>{const p=S.w[w.id]; if(p&&p.box>=1&&p.next<=t) p.next=t+1;});
+    save();
+  }
   document.querySelector('#learn .flash-wrap').style.display='none';
   document.getElementById('gradeBtns').style.display='none';
   document.getElementById('learnCounter').textContent='';
@@ -546,7 +552,7 @@ function finishLearn(empty){
   document.getElementById('learnDone').style.display='block';
   document.getElementById('doneMsg').textContent = empty
     ? 'วันนี้ไม่มีคำต้องทบทวนแล้ว เยี่ยมมาก! 🎯'
-    : `ทบทวนไป ${sessionDone} ครั้งวันนี้ • ไฟ ${fireAlive()?S.streak.count:0} วัน 🔥`;
+    : `เรียนครบของวันนี้แล้ว! 🔥 ไฟ ${fireAlive()?S.streak.count:0} วัน • ทบทวนไป ${sessionDone} ครั้ง (คำที่ค้างเลื่อนไปพรุ่งนี้)`;
 }
 
 /* ============ TTS ============ */
