@@ -453,7 +453,7 @@ function show(id){
 function renderHome(){
   const t=todayNum();
   let learned=0,mastered=0,due=0,seen=0;
-  WORDS.forEach(w=>{const p=S.w[w.id]; if(p&&p.seen){seen++; if(p.box>=1)learned++; if(p.box>=5)mastered++; if(p.next<=t)due++;}});
+  WORDS.forEach(w=>{const p=S.w[w.id]; if(!p)return; if(p.seen)seen++; if(p.box>=1){learned++; if(p.box>=5)mastered++; if(p.next<=t)due++;}});
   document.getElementById('hLearned').textContent=learned;
   document.getElementById('hMastered').textContent=mastered;
   document.getElementById('hDue').textContent=Math.min(due,MAX_REVIEW_PER_DAY);
@@ -479,10 +479,10 @@ function renderHome(){
 let queue=[],qi=0,flipped=false,sessionDone=0;
 function buildQueue(){
   const t=todayNum();
-  const due=WORDS.filter(w=>{const p=S.w[w.id];return p&&p.seen&&p.next<=t;})
+  const due=WORDS.filter(w=>{const p=S.w[w.id];return p&&p.box>=1&&p.next<=t;}) // นับเฉพาะคำที่ผ่านการเรียนแล้ว (box>=1) ไม่ใช่คำที่แค่เล่นเกมโดน
                  .sort((a,b)=>S.w[a.id].next-S.w[b.id].next)
                  .slice(0,MAX_REVIEW_PER_DAY); // ทวนไม่เกินเพดาน (เอาคำที่ค้างนานสุดก่อน) ส่วนเกินยัง due อยู่ เลื่อนไปวันถัดไปเอง
-  const fresh=WORDS.filter(w=>{const p=S.w[w.id];return !p||!p.seen;}).slice(0,NEW_PER_DAY);
+  const fresh=WORDS.filter(w=>{const p=S.w[w.id];return !p||p.box<1;}).slice(0,NEW_PER_DAY); // คำใหม่ = ยังไม่เข้าระบบทบทวน (box<1)
   return [...due,...fresh];
 }
 function startLearn(){
@@ -829,6 +829,7 @@ function peekSpell(){
 function nextSpell(){ sidx++; if(sidx>=spList.length){ recordScore({game:'สะกดคำ',score:spScore,total:spList.length}); gameOver(spScore,spList.length,startSpell);} else showSpell(); }
 
 /* ============ STATS ============ */
+let weakShowAll=false, histShowAll=false;
 function timeAgo(ts){
   if(!ts) return '';
   const s=Math.floor((Date.now()-ts)/1000);
@@ -837,21 +838,35 @@ function timeAgo(ts){
   if(s<86400) return Math.floor(s/3600)+' ชม.ที่แล้ว';
   return Math.floor(s/86400)+' วันที่แล้ว';
 }
+function histRow(h){
+  const d=document.createElement('div'); d.className='weak-item';
+  let right;
+  if(h.moves!=null){ right='<span class="badge" style="background:var(--accent)">'+h.moves+' ครั้ง</span>'; }
+  else { const pct=h.total?Math.round(h.score/h.total*100):0;
+    const col=pct>=80?'var(--accent2)':pct>=50?'var(--gold)':'var(--danger)';
+    right='<span class="badge" style="background:'+col+'">'+h.score+'/'+h.total+'</span>'; }
+  d.innerHTML='<div><div class="en" style="font-size:14px">'+h.game+'</div><div class="mn">'+timeAgo(h.ts)+'</div></div><div>'+right+'</div>';
+  return d;
+}
 function renderHistory(){
   const hl=document.getElementById('histList'); if(!hl) return;
   const hist=S.history||[];
-  if(hist.length===0){ hl.innerHTML='<div class="sub">ยังไม่มีสถิติ ลองเล่นเกมดูสิ</div>'; return; }
   hl.innerHTML='';
-  hist.slice(0,15).forEach(h=>{
-    const d=document.createElement('div'); d.className='weak-item';
-    let right;
-    if(h.moves!=null){ right='<span class="badge" style="background:var(--accent)">'+h.moves+' ครั้ง</span>'; }
-    else { const pct=h.total?Math.round(h.score/h.total*100):0;
-      const col=pct>=80?'var(--accent2)':pct>=50?'var(--gold)':'var(--danger)';
-      right='<span class="badge" style="background:'+col+'">'+h.score+'/'+h.total+'</span>'; }
-    d.innerHTML='<div><div class="en" style="font-size:14px">'+h.game+'</div><div class="mn">'+timeAgo(h.ts)+'</div></div><div>'+right+'</div>';
-    hl.appendChild(d);
-  });
+  if(hist.length===0){ hl.innerHTML='<div class="sub">ยังไม่มีสถิติ ลองเล่นเกมดูสิ</div>'; return; }
+  const t=todayNum();
+  const list = histShowAll ? hist : hist.filter(h=>h.day===t);
+  if(list.length===0){
+    const s=document.createElement('div'); s.className='sub'; s.textContent='วันนี้ยังไม่ได้เล่นเกม'; hl.appendChild(s);
+  } else {
+    list.slice(0,50).forEach(h=>hl.appendChild(histRow(h)));
+  }
+  const olderCount=hist.filter(h=>h.day!==t).length;
+  if(olderCount>0){
+    const btn=document.createElement('button'); btn.className='btn ghost'; btn.style.marginTop='8px';
+    btn.textContent = histShowAll ? '🔼 ย่อ (เฉพาะวันนี้)' : ('🔽 ดูทั้งหมด ('+hist.length+' รอบ)');
+    btn.onclick=()=>{ histShowAll=!histShowAll; renderHistory(); };
+    hl.appendChild(btn);
+  }
 }
 function renderStats(){
   let seen=0,mastered=0;
@@ -866,7 +881,8 @@ function renderStats(){
   if(weak.length===0){ list.innerHTML='<div class="sub">ยังไม่มีคำที่จำไม่ได้ 👍</div>'; return; }
   weak.sort((a,b)=>b.x-a.x);
   list.innerHTML='';
-  weak.forEach(item=>{
+  const shown = weakShowAll ? weak : weak.slice(0,5);
+  shown.forEach(item=>{
     const d=document.createElement('div'); d.className='weak-item';
     d.innerHTML=`<div><div class="en">${item.w.en} <span class="mn">${item.w.pos}</span></div>
       <div class="mn">${item.w.th}</div></div>
@@ -876,6 +892,12 @@ function renderStats(){
     d.querySelector('.small-speak').onclick=()=>speak(item.w.en);
     list.appendChild(d);
   });
+  if(weak.length>5){
+    const btn=document.createElement('button'); btn.className='btn ghost'; btn.style.marginTop='8px';
+    btn.textContent = weakShowAll ? '🔼 ย่อ (5 อันดับ)' : ('🔽 ดูทั้งหมด ('+weak.length+' คำ)');
+    btn.onclick=()=>{ weakShowAll=!weakShowAll; renderStats(); };
+    list.appendChild(btn);
+  }
 }
 function resetAll(){
   if(confirm('ลบความคืบหน้าและ streak ทั้งหมด? เริ่มใหม่จากศูนย์')){
